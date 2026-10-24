@@ -1,7 +1,13 @@
+import { useEffect, useState } from "react";
 import { Link, NavLink } from "react-router";
 import { GraduationCap } from "lucide-react";
+import { getStudentSession, subscribeToStudentSession } from "../../lib/authSession";
 
 export default function Navbar() {
+  const [student, setStudent] = useState(getStudentSession);
+
+  useEffect(() => subscribeToStudentSession(() => setStudent(getStudentSession())), []);
+
   return (
     <header className="navbar">
       <div className="page-container navbar-inner">
@@ -15,12 +21,12 @@ export default function Navbar() {
         <nav className="nav-links" aria-label="Main navigation">
 
           <NavLink
-            to="/login"
+            to={student ? "/account" : "/login"}
             className={({ isActive }) =>
-              `nav-link${isActive ? "active" : ""}`
+              `nav-link${isActive ? " active" : ""}`
             }
           >
-            Sign in
+            {student ? "Account" : "Sign in"}
           </NavLink>
 
           <NavLink

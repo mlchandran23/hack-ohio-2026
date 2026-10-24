@@ -2,7 +2,17 @@ type AuthResponse = {
 	error?: string;
 };
 
-async function postAuthRequest(path: string, email: string, password: string, name?: string): Promise<void> {
+export type AuthenticatedStudent = {
+	id: string;
+	name: string;
+	email: string;
+};
+
+type LoginResponse = AuthResponse & {
+	student: AuthenticatedStudent;
+};
+
+async function postAuthRequest<T>(path: string, email: string, password: string, name?: string): Promise<T> {
 	const response = await fetch(`/api/${path}`, {
 		method: "POST",
 		headers: { "Content-Type": "application/json" },
@@ -13,12 +23,13 @@ async function postAuthRequest(path: string, email: string, password: string, na
 		const body = (await response.json().catch(() => null)) as AuthResponse | null;
 		throw new Error(body?.error ?? "Authentication request failed");
 	}
+	return response.json() as Promise<T>;
 }
 
-export function login(email: string, password: string): Promise<void> {
-	return postAuthRequest("login", email, password);
+export function login(email: string, password: string): Promise<LoginResponse> {
+	return postAuthRequest<LoginResponse>("login", email, password);
 }
 
 export function createAccount(name: string, email: string, password: string): Promise<void> {
-	return postAuthRequest("signup", email, password, name);
+	return postAuthRequest<void>("signup", email, password, name);
 }

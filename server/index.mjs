@@ -122,7 +122,7 @@ app.post("/api/login", (req, res) => {
   }
 
   const student = db.prepare(`
-    SELECT id, name, password
+    SELECT id, name, email, password
     FROM students
     WHERE email = ?
   `).get(email);
@@ -142,7 +142,10 @@ app.post("/api/login", (req, res) => {
     return res.status(401).json({ error: "Invalid email or password" });
   }
 
-  res.json({ message: "Login successful", student: { id: student.id, name: student.name } });
+  res.json({
+    message: "Login successful",
+    student: { id: student.id, name: student.name, email: student.email },
+  });
 });
 
 app.get("/api/projects", (_req, res) => {
