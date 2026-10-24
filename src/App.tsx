@@ -6,6 +6,8 @@ import ProjectPage from "./pages/ProjectPage";
 import StudentPage from "./pages/StudentPage";
 import SavedPage from "./pages/SavedPage";
 import NotFoundPage from "./pages/NotFoundPage";
+import LoginPage from "./pages/LoginPage";
+import SignUpPage from "./pages/SignUpPage";
 
 export default function App() {
   return (
@@ -14,6 +16,8 @@ export default function App() {
 
       <Routes>
         <Route index element={<HomePage />} />
+        <Route path="signup" element={<SignUpPage />} />
+        <Route path="login" element={<LoginPage />} />
         <Route path="projects" element={<ExplorePage />} />
         <Route path="projects/:projectId" element={<ProjectPage />} />
         <Route path="students/:studentId" element={<StudentPage />} />
