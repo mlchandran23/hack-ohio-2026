@@ -8,6 +8,8 @@ import SavedPage from "./pages/SavedPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
+import Footer from "./components/layout/Footer";
+
 
 export default function App() {
   return (
@@ -24,6 +26,8 @@ export default function App() {
         <Route path="saved" element={<SavedPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
+
+      <Footer />
     </BrowserRouter>
   );
 }
