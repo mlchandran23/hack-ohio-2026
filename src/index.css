@@ -986,6 +986,69 @@ select {
   outline-offset: 3px;
 }
 
+.project-results-message {
+  padding: 2rem 0;
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+
+.student-profile {
+  display: flex;
+  align-items: flex-start;
+  gap: 1.5rem;
+  margin: 2rem 0 3rem;
+  padding: 2rem;
+  border: 1px solid var(--border-color);
+  border-radius: 1rem;
+}
+
+.student-profile-avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 5rem;
+  height: 5rem;
+  border-radius: 50%;
+  background: var(--primary);
+  color: white;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.student-profile-info h1 {
+  margin: 0 0 0.5rem;
+}
+
+.student-major {
+  margin: 0 0 0.75rem;
+  color: var(--text-secondary);
+}
+
+.student-bio {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.student-projects {
+  margin-top: 2rem;
+}
+
+.student-projects .project-results-header h2 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .student-profile {
+    flex-direction: column;
+    padding: 1.25rem;
+  }
+}
+
+
 
 /* =========================
    14. Responsive layouts

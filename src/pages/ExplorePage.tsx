@@ -1,111 +1,178 @@
+
+import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
-import { useMemo, useState } from "react";
 import ProjectCard from "../components/projects/ProjectCard";
-import { projects } from "../data/projects";
+import { getProjects } from "../lib/api/projects";
+import type { Project } from "../types/project";
 
 export default function ExplorePage() {
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All categories");
-  const [difficulty, setDifficulty] = useState("All levels");
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All");
+  const [selectedDifficulty, setSelectedDifficulty] = useState("All");
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProjects() {
+      setIsLoading(true);
+      setError(null);
+
+      try {
+        const data = await getProjects();
+
+        if (!cancelled) {
+          setProjects(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Failed to load projects.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadProjects();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [retryCount]);
 
   const categories = useMemo(
-    () => [...new Set(projects.map((project) => project.category))].sort(),
-    [],
+    () => ["All", ...new Set(projects.map((project) => project.category))],
+    [projects],
   );
 
+  const difficulties = ["All", "Beginner", "Intermediate", "Advanced"];
+
   const filteredProjects = useMemo(() => {
-    const normalizedSearch = search.trim().toLowerCase();
+    const query = searchQuery.trim().toLowerCase();
 
     return projects.filter((project) => {
       const matchesSearch =
-        normalizedSearch.length === 0 ||
-        [
-          project.title,
-          project.description,
-          project.category,
-          ...project.technologies,
-          ...project.skillsLearned,
-        ]
-          .join(" ")
-          .toLowerCase()
-          .includes(normalizedSearch);
+        query === "" ||
+        project.title.toLowerCase().includes(query) ||
+        project.description.toLowerCase().includes(query) ||
+        project.technologies.some((technology) =>
+          technology.toLowerCase().includes(query),
+        ) ||
+        project.skillsLearned.some((skill) =>
+          skill.toLowerCase().includes(query),
+        );
 
       const matchesCategory =
-        category === "All categories" || project.category === category;
+        selectedCategory === "All" ||
+        project.category === selectedCategory;
 
       const matchesDifficulty =
-        difficulty === "All levels" || project.difficulty === difficulty;
+        selectedDifficulty === "All" ||
+        project.difficulty === selectedDifficulty;
 
       return matchesSearch && matchesCategory && matchesDifficulty;
     });
-  }, [search, category, difficulty]);
+  }, [projects, searchQuery, selectedCategory, selectedDifficulty]);
 
   return (
     <main className="page-container page-section">
-      <section className="explore-intro">
-        <p className="eyebrow">THE PROJECT DIRECTORY</p>
-        <h1 className="explore-title">Explore student projects.</h1>
-        <p className="explore-description">
-          Get inspired by what other Buckeyes are creating. Discover the
-          technologies they use, the skills they build, and beginner-friendly
-          tasks that can help you get involved.
+      <div className="page-header">
+        <h1>Explore Projects</h1>
+        <p>
+          Discover what other Buckeyes are building, the skills they are
+          learning, and how you can get involved.
         </p>
-      </section>
+      </div>
 
-      <section aria-label="Search and filter projects">
-        <div className="explore-controls">
-          <label className="search-field">
-            <Search size={19} aria-hidden="true" />
-            <span className="visually-hidden">Search projects</span>
-            <input
-              className="search-input"
-              type="search"
-              placeholder="Search projects, skills, or technologies..."
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </label>
+      <section className="project-filters" aria-label="Filter projects">
+        <div className="search-container">
+          <Search size={18} aria-hidden="true" />
+          <input
+            type="search"
+            className="search-input"
+            placeholder="Search projects, technologies, or skills..."
+            value={searchQuery}
+            onChange={(event) => setSearchQuery(event.target.value)}
+            aria-label="Search projects"
+          />
+        </div>
 
-          <label>
-            <span className="visually-hidden">Filter by category</span>
-            <select
-              className="filter-select"
-              value={category}
-              onChange={(event) => setCategory(event.target.value)}
-            >
-              <option>All categories</option>
-              {categories.map((item) => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
+        <div className="filter-group">
+          <label htmlFor="category-filter">Category</label>
+          <select
+            id="category-filter"
+            value={selectedCategory}
+            onChange={(event) => setSelectedCategory(event.target.value)}
+          >
+            {categories.map((category) => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          <label>
-            <span className="visually-hidden">Filter by difficulty</span>
-            <select
-              className="filter-select"
-              value={difficulty}
-              onChange={(event) => setDifficulty(event.target.value)}
-            >
-              <option>All levels</option>
-              <option>Beginner</option>
-              <option>Intermediate</option>
-              <option>Advanced</option>
-            </select>
-          </label>
+        <div className="filter-group">
+          <label htmlFor="difficulty-filter">Difficulty</label>
+          <select
+            id="difficulty-filter"
+            value={selectedDifficulty}
+            onChange={(event) => setSelectedDifficulty(event.target.value)}
+          >
+            {difficulties.map((difficulty) => (
+              <option key={difficulty} value={difficulty}>
+                {difficulty}
+              </option>
+            ))}
+          </select>
         </div>
       </section>
 
-      <section className="project-results" aria-live="polite">
-        <div className="project-results-heading">
-          <h2 className="project-results-title">Projects to explore</h2>
-          <p className="project-count">
-            {filteredProjects.length}{" "}
-            {filteredProjects.length === 1 ? "project" : "projects"}
+      <section className="project-results" aria-label="Project results">
+        <div className="project-results-header">
+          <h2>
+            {isLoading
+              ? "Loading projects..."
+              : error
+                ? "Projects unavailable"
+                : "Student Projects"}
+          </h2>
+
+          {!isLoading && !error && (
+            <p>
+              {filteredProjects.length}{" "}
+              {filteredProjects.length === 1 ? "project" : "projects"} found
+            </p>
+          )}
+        </div>
+
+        {isLoading ? (
+          <p className="project-results-message" role="status">
+            Loading projects...
           </p>
-        </div>
-
-        {filteredProjects.length > 0 ? (
+        ) : error ? (
+          <div className="empty-state" role="alert">
+            <h3>Couldn't load projects</h3>
+            <p>{error}</p>
+            <button
+              type="button"
+              className="button button-primary"
+              onClick={() => setRetryCount((count) => count + 1)}
+            >
+              Try again
+            </button>
+          </div>
+        ) : filteredProjects.length > 0 ? (
           <div className="project-grid">
             {filteredProjects.map((project) => (
               <ProjectCard key={project.id} project={project} />
@@ -115,16 +182,15 @@ export default function ExplorePage() {
           <div className="empty-state">
             <h3>No projects found</h3>
             <p>
-              Try a different search or change your filters to see more
-              projects.
+              Try changing your search terms or selecting different filters.
             </p>
             <button
               type="button"
               className="button button-secondary"
               onClick={() => {
-                setSearch("");
-                setCategory("All categories");
-                setDifficulty("All levels");
+                setSearchQuery("");
+                setSelectedCategory("All");
+                setSelectedDifficulty("All");
               }}
             >
               Clear filters

@@ -1,3 +1,16 @@
+export interface Student {
+  id: string;
+  name: string;
+  major: string | null;
+  bio: string | null;
+}
+
+export interface Mentor {
+  id: string;
+  name: string;
+  expertise: string | null;
+  bio: string | null;
+}
 
 export interface Project {
   id: string;
@@ -10,4 +23,6 @@ export interface Project {
   skillsLearned: string[];
   starterTasks: string[];
   studentIds: string[];
+  students: Student[];
+  mentors: Mentor[];
 }

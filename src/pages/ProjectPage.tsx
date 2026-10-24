@@ -1,121 +1,200 @@
+
+import { useEffect, useState } from "react";
+import { Link, useParams } from "react-router";
 import {
   ArrowLeft,
-  ArrowUpRight,
-  CheckCircle2,
+  BookOpen,
   Code2,
   GraduationCap,
-  ListChecks,
+  Lightbulb,
+  Users,
 } from "lucide-react";
-import { Link, useParams } from "react-router";
-import { projects } from "../data/projects";
+import { getProjectById } from "../lib/api/projects";
+import type { Project } from "../types/project";
 
 export default function ProjectPage() {
   const { projectId } = useParams();
-  const project = projects.find((item) => item.id === projectId);
 
-  if (!project) {
+  const [project, setProject] = useState<Project | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProject() {
+      setIsLoading(true);
+      setError(null);
+      setProject(null);
+
+      try {
+        if (!projectId) {
+          throw new Error("Missing project ID.");
+        }
+
+        const data = await getProjectById(projectId);
+
+        if (!cancelled) {
+          setProject(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error ? err.message : "Failed to load project.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void loadProject();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
+
+  if (isLoading) {
     return (
       <main className="page-container page-section">
-        <Link to="/projects" className="back-link">
-          <ArrowLeft size={17} /> Back to projects
-        </Link>
+        <p role="status">Loading project...</p>
+      </main>
+    );
+  }
 
-        <div className="empty-state">
-          <h1>Project not found</h1>
-          <p>
-            This project may have been moved or the link may be incorrect.
-          </p>
-          <Link to="/projects" className="button button-primary">
-            Browse projects
-          </Link>
-        </div>
+  if (error || !project) {
+    return (
+      <main className="page-container page-section">
+        <h1>Project unavailable</h1>
+        <p>{error ?? "Project not found."}</p>
+        <Link to="/projects" className="button button-primary">
+          Browse projects
+        </Link>
       </main>
     );
   }
 
   return (
-    <main className="page-container detail-page">
+    <main className="page-container page-section">
       <Link to="/projects" className="back-link">
-        <ArrowLeft size={17} />
+        <ArrowLeft size={16} />
         Back to projects
       </Link>
 
-      <article className="detail-panel">
-        <div className="detail-tags">
+      <section className="project-detail-header">
+        <div className="project-card-top">
           <span className="tag tag-category">{project.category}</span>
           <span className="tag tag-status">{project.status}</span>
           <span className="tag">{project.difficulty}</span>
         </div>
 
-        <h1 className="detail-title">{project.title}</h1>
-        <p className="detail-description">{project.description}</p>
+        <h1>{project.title}</h1>
+        <p>{project.description}</p>
+      </section>
 
-        <section className="detail-section">
-          <h2 className="detail-section-title">
-            <Code2 size={20} />
-            Technologies
-          </h2>
+      <div className="project-detail-grid">
+        <div className="project-detail-main">
+          <section className="detail-section">
+            <h2>
+              <Code2 size={20} />
+              Technologies
+            </h2>
+            {project.technologies.length > 0 ? (
+              <div className="tag-list">
+                {project.technologies.map((technology) => (
+                  <span className="tag" key={technology}>
+                    {technology}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p>Technologies have not been listed yet.</p>
+            )}
+          </section>
 
-          <div className="tag-list">
-            {project.technologies.map((technology) => (
-              <span className="tag" key={technology}>
-                {technology}
-              </span>
-            ))}
-          </div>
-        </section>
+          <section className="detail-section">
+            <h2>
+              <BookOpen size={20} />
+              Skills You'll Learn
+            </h2>
+            {project.skillsLearned.length > 0 ? (
+              <ul className="detail-list">
+                {project.skillsLearned.map((skill) => (
+                  <li key={skill}>{skill}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>Skills have not been listed yet.</p>
+            )}
+          </section>
 
-        <section className="detail-section">
-          <h2 className="detail-section-title">
-            <GraduationCap size={20} />
-            Skills you can learn
-          </h2>
-
-          <ul className="detail-list">
-            {project.skillsLearned.map((skill) => (
-              <li className="detail-list-item" key={skill}>
-                <CheckCircle2
-                  className="detail-list-icon"
-                  size={18}
-                  aria-hidden="true"
-                />
-                {skill}
-              </li>
-            ))}
-          </ul>
-        </section>
-
-        <section className="detail-section">
-          <h2 className="detail-section-title">
-            <ListChecks size={20} />
-            Starter tasks
-          </h2>
-
-          <p className="section-description">
-            Not sure where to begin? These tasks are potential first steps for
-            learning about the project.
-          </p>
-
-          <ol className="detail-list">
-            {project.starterTasks.map((task, index) => (
-              <li className="starter-task" key={task}>
-                <span className="detail-list-icon">{index + 1}</span>
-                <span>{task}</span>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <div className="detail-bottom">
-          <p>
-            Interested in learning more? Use this project as inspiration for
-            your own next step.
-          </p>
-          <Link to="/projects" className="button button-secondary">
-            Explore more <ArrowUpRight size={17} />
-          </Link>
+          <section className="detail-section">
+            <h2>
+              <Lightbulb size={20} />
+              Starter Tasks
+            </h2>
+            <p>
+              New to this project? These tasks can help you find a place to
+              start.
+            </p>
+            {project.starterTasks.length > 0 ? (
+              <ul className="detail-list">
+                {project.starterTasks.map((task, index) => (
+                  <li key={`${index}-${task}`}>{task}</li>
+                ))}
+              </ul>
+            ) : (
+              <p>No starter tasks have been added yet.</p>
+            )}
+          </section>
         </div>
-      </article>
+
+        <aside className="project-detail-sidebar">
+          <section className="detail-section">
+            <h2>
+              <Users size={20} />
+              Student Contributors
+            </h2>
+            {project.students.length > 0 ? (
+              <ul className="people-list">
+                {project.students.map((student) => (
+                  <li key={student.id}>
+                    <Link to={`/students/${student.id}`}>
+                      <strong>{student.name}</strong>
+                    </Link>
+                    {student.major && <p>{student.major}</p>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No student contributors have been listed yet.</p>
+            )}
+          </section>
+
+          <section className="detail-section">
+            <h2>
+              <GraduationCap size={20} />
+              Project Mentors
+            </h2>
+            {project.mentors.length > 0 ? (
+              <ul className="people-list">
+                {project.mentors.map((mentor) => (
+                  <li key={mentor.id}>
+                    <strong>{mentor.name}</strong>
+                    {mentor.expertise && <p>{mentor.expertise}</p>}
+                    {mentor.bio && <p>{mentor.bio}</p>}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>No project mentors have been listed yet.</p>
+            )}
+          </section>
+        </aside>
+      </div>
     </main>
   );
 }
