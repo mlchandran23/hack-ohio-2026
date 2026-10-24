@@ -1,16 +1,18 @@
 import { useState, type SubmitEvent } from "react";
 import { Link, useNavigate } from "react-router";
+import { createAccount } from "../lib/api/auth";
 
 export default function SignUpPage() {
+	const [name, setName] = useState("");
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const navigate = useNavigate();
 
-	function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+	async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault();
-		// Add authentication handling here.
-        if(!email || !password) {
-            alert("Please enter both email and password.");
+		if(!name.trim() || !email || !password) {
+			alert("Please enter your name, email, and password.");
             return;
         }
         if(!validateEmail(email)) {
@@ -20,8 +22,15 @@ export default function SignUpPage() {
         if(password !== confirmPassword) {
             alert("Passwords do not match.");
             return;
-        }       
-        alert("Login successful");
+		}
+
+		try {
+			await createAccount(name, email, password);
+			alert("Account created. Please sign in.");
+			navigate("/login");
+		} catch (error) {
+			alert(error instanceof Error ? error.message : "Unable to create account. Please try again.");
+		}
         
 	}
 
@@ -68,6 +77,21 @@ export default function SignUpPage() {
 				<p style={{ margin: "0 0 28px", color: "#6b7280" }}>Create a new account</p>
 
 				<form onSubmit={handleSubmit}>
+					<label htmlFor="name" style={{ display: "block", marginBottom: 8, color: "#374151", fontWeight: 600 }}>
+						Name
+					</label>
+					<input
+						id="name"
+						name="name"
+						type="text"
+						autoComplete="name"
+						placeholder="Your name"
+						required
+						value={name}
+						onChange={(event) => setName(event.target.value)}
+						style={{ ...inputStyle, marginBottom: 20 }}
+					/>
+
 					<label htmlFor="email" style={{ display: "block", marginBottom: 8, color: "#374151", fontWeight: 600 }}>
 						Email address
 					</label>

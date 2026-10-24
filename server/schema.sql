@@ -5,7 +5,9 @@ CREATE TABLE IF NOT EXISTS students (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
     major TEXT,
-    bio TEXT
+    bio TEXT,
+    email TEXT COLLATE NOCASE,
+    password TEXT
 );
 
 CREATE TABLE IF NOT EXISTS projects (

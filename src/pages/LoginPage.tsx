@@ -1,13 +1,15 @@
 import { useState, type SubmitEvent } from "react";
 import { Link, useNavigate } from "react-router";
+import { login } from "../lib/api/auth";
 
 export default function LoginPage() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
+    const navigate = useNavigate();
 
-	function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
+
+	async function handleSubmit(event: SubmitEvent<HTMLFormElement>) {
 		event.preventDefault();
-		// Add authentication handling here.
         if(!email || !password) {
             alert("Please enter both email and password.");
             return;
@@ -15,8 +17,15 @@ export default function LoginPage() {
         if(!validateEmail(email)) {
             alert("Please enter a valid email address.");
             return;
-        }        
-        alert("Login successful");
+		}
+
+		try {
+			await login(email, password);
+			alert("Login successful!");
+            navigate("/projects");
+		} catch (error) {
+			alert(error instanceof Error ? error.message : "Unable to log in. Please try again.");
+		}
         
 	}
 
