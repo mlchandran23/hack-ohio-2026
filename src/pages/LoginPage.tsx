@@ -1,6 +1,7 @@
 import { useState, type SubmitEvent } from "react";
 import { Link, useNavigate } from "react-router";
 import { login } from "../lib/api/auth";
+import { setStudentSession } from "../lib/authSession";
 
 export default function LoginPage() {
 	const [email, setEmail] = useState("");
@@ -20,7 +21,8 @@ export default function LoginPage() {
 		}
 
 		try {
-			await login(email, password);
+			const result = await login(email, password);
+			setStudentSession(result.student);
 			alert("Login successful!");
             navigate("/projects");
 		} catch (error) {
