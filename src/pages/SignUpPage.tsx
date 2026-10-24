@@ -129,7 +129,7 @@ export default function SignUpPage() {
 							cursor: "pointer",
 						}}
 					>
-						Sign in
+						Sign up
 					</button>
 				</form>
 

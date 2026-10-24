@@ -1,3 +1,18 @@
+#Usage
+npm run dev to start front end
+npm run server to start the database
+
+
+
+
+
+
+
+
+
+
+
+
 # React + TypeScript + Vite
 
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
