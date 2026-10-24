@@ -19,7 +19,7 @@ export default function HomePage() {
           </p>
 
           <div className="home-hero-actions">
-            <Link to="/explore" className="home-button home-button-primary">
+            <Link to="/projects" className="home-button home-button-primary">
               Explore Projects
               <ArrowRight size={18} aria-hidden="true" />
             </Link>
@@ -161,7 +161,7 @@ export default function HomePage() {
           </p>
         </div>
 
-        <Link to="/explore" className="home-button home-button-light">
+        <Link to="/projects" className="home-button home-button-light">
           Browse Projects
           <ArrowRight size={18} aria-hidden="true" />
         </Link>
