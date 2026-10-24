@@ -8,6 +8,7 @@ import SavedPage from "./pages/SavedPage";
 import NotFoundPage from "./pages/NotFoundPage";
 import LoginPage from "./pages/LoginPage";
 import SignUpPage from "./pages/SignUpPage";
+import AccountPage from "./pages/AccountPage";
 
 export default function App() {
   return (
@@ -16,6 +17,7 @@ export default function App() {
 
       <Routes>
         <Route index element={<HomePage />} />
+        <Route path="account" element={<AccountPage />} />
         <Route path="signup" element={<SignUpPage />} />
         <Route path="login" element={<LoginPage />} />
         <Route path="projects" element={<ExplorePage />} />
