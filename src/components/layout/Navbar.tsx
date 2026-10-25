@@ -38,6 +38,7 @@ export default function Navbar() {
             Explore projects
           </NavLink>
 
+         {/* 
           <NavLink
             to="/saved"
             className={({ isActive }) =>
@@ -46,6 +47,7 @@ export default function Navbar() {
           >
             Saved
           </NavLink>
+           */}
         </nav>
       </div>
     </header>
