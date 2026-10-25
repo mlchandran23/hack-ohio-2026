@@ -6,6 +6,8 @@ export type AuthenticatedStudent = {
 	id: string;
 	name: string;
 	email: string;
+	major: string | null;
+	bio: string | null;
 };
 
 type LoginResponse = AuthResponse & {

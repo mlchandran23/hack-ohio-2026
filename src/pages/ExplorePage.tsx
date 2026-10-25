@@ -1,19 +1,43 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Search } from "lucide-react";
+import { Link } from "react-router";
 import ProjectCard from "../components/projects/ProjectCard";
-import { getProjects } from "../lib/api/projects";
+import { createProject, getProjects, type CreateProjectInput } from "../lib/api/projects";
+import { getStudentSession, subscribeToStudentSession, type StudentSession } from "../lib/authSession";
 import type { Project } from "../types/project";
+
+const emptyProjectForm = {
+  title: "",
+  description: "",
+  category: "",
+  difficulty: "Beginner" as Project["difficulty"],
+  technologies: "",
+  skillsLearned: "",
+  starterTasks: "",
+};
+
+function parseList(value: string): string[] {
+  return value.split(",").map((item) => item.trim()).filter(Boolean);
+}
 
 export default function ExplorePage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [student, setStudent] = useState<StudentSession | null>(getStudentSession);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [selectedDifficulty, setSelectedDifficulty] = useState("All");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [projectForm, setProjectForm] = useState(emptyProjectForm);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
+  const [createMessage, setCreateMessage] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+
+  useEffect(() => subscribeToStudentSession(() => setStudent(getStudentSession())), []);
 
   useEffect(() => {
     let cancelled = false;
@@ -49,6 +73,43 @@ export default function ExplorePage() {
       cancelled = true;
     };
   }, [retryCount]);
+
+  async function handleCreateProject(event: React.SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!student) {
+      setCreateError("Sign in before creating a project.");
+      return;
+    }
+
+    const input: CreateProjectInput = {
+      ...projectForm,
+      studentId: student.id,
+      technologies: parseList(projectForm.technologies),
+      skillsLearned: parseList(projectForm.skillsLearned),
+      starterTasks: parseList(projectForm.starterTasks),
+    };
+
+    setIsCreating(true);
+    setCreateError(null);
+    setCreateMessage(null);
+    try {
+      const createdProject = await createProject(input);
+      setProjects((currentProjects) => [
+        createdProject,
+        ...currentProjects.filter((project) => project.id !== createdProject.id),
+      ]);
+      setSearchQuery("");
+      setSelectedCategory("All");
+      setSelectedDifficulty("All");
+      setProjectForm(emptyProjectForm);
+      setShowCreateForm(false);
+      setCreateMessage("Project created. You are listed as a contributor.");
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "Unable to create project.");
+    } finally {
+      setIsCreating(false);
+    }
+  }
 
   const categories = useMemo(
     () => ["All", ...new Set(projects.map((project) => project.category))],
@@ -93,6 +154,119 @@ export default function ExplorePage() {
           learning, and how you can get involved.
         </p>
       </div>
+
+      <div className="project-create-actions">
+        {student ? (
+          <button
+            type="button"
+            className="button button-primary"
+            onClick={() => {
+              setShowCreateForm((isVisible) => !isVisible);
+              setCreateError(null);
+              setCreateMessage(null);
+            }}
+            aria-expanded={showCreateForm}
+            aria-controls="create-project-form"
+          >
+            {showCreateForm ? "Cancel" : "Create project"}
+          </button>
+        ) : (
+          <p>
+            <Link to="/login">Sign in</Link> to create a project and join as a contributor.
+          </p>
+        )}
+      </div>
+
+      {createMessage && <p className="project-create-message" role="status">{createMessage}</p>}
+      {createError && <p className="project-create-error" role="alert">{createError}</p>}
+
+      {student && showCreateForm && (
+        <section className="project-create-panel" aria-labelledby="create-project-heading">
+          <h2 id="create-project-heading">Create a project</h2>
+          <p>Your account will be added as a contributor automatically.</p>
+          <form id="create-project-form" className="project-create-form" onSubmit={handleCreateProject}>
+            <div className="project-create-fields">
+              <div className="project-create-field">
+                <label htmlFor="new-project-title">Project title</label>
+                <input
+                  id="new-project-title"
+                  required
+                  maxLength={120}
+                  value={projectForm.title}
+                  onChange={(event) => setProjectForm({ ...projectForm, title: event.target.value })}
+                />
+              </div>
+              <div className="project-create-field">
+                <label htmlFor="new-project-category">Category</label>
+                <input
+                  id="new-project-category"
+                  required
+                  maxLength={80}
+                  placeholder="e.g. Web Development"
+                  value={projectForm.category}
+                  onChange={(event) => setProjectForm({ ...projectForm, category: event.target.value })}
+                />
+              </div>
+              <div className="project-create-field project-create-field-wide">
+                <label htmlFor="new-project-description">Description</label>
+                <textarea
+                  id="new-project-description"
+                  required
+                  maxLength={2000}
+                  rows={3}
+                  value={projectForm.description}
+                  onChange={(event) => setProjectForm({ ...projectForm, description: event.target.value })}
+                />
+              </div>
+              <div className="project-create-field">
+                <label htmlFor="new-project-difficulty">Difficulty</label>
+                <select
+                  id="new-project-difficulty"
+                  value={projectForm.difficulty}
+                  onChange={(event) => setProjectForm({
+                    ...projectForm,
+                    difficulty: event.target.value as Project["difficulty"],
+                  })}
+                >
+                  <option>Beginner</option>
+                  <option>Intermediate</option>
+                  <option>Advanced</option>
+                </select>
+              </div>
+              <div className="project-create-field">
+                <label htmlFor="new-project-technologies">Technologies</label>
+                <input
+                  id="new-project-technologies"
+                  placeholder="Comma-separated"
+                  value={projectForm.technologies}
+                  onChange={(event) => setProjectForm({ ...projectForm, technologies: event.target.value })}
+                />
+              </div>
+              <div className="project-create-field">
+                <label htmlFor="new-project-skills">Skills to learn</label>
+                <input
+                  id="new-project-skills"
+                  placeholder="Comma-separated"
+                  value={projectForm.skillsLearned}
+                  onChange={(event) => setProjectForm({ ...projectForm, skillsLearned: event.target.value })}
+                />
+              </div>
+              <div className="project-create-field">
+                <label htmlFor="new-project-tasks">Starter tasks</label>
+                <input
+                  id="new-project-tasks"
+                  placeholder="Comma-separated"
+                  value={projectForm.starterTasks}
+                  onChange={(event) => setProjectForm({ ...projectForm, starterTasks: event.target.value })}
+                />
+              </div>
+            </div>
+            <button type="submit" className="button button-primary" disabled={isCreating}>
+              {isCreating ? "Creating..." : "Create project"}
+            </button>
+          </form>
+        </section>
+      )}
 
       <section className="project-filters" aria-label="Filter projects">
         <div className="search-container">

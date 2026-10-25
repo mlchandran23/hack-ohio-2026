@@ -122,7 +122,7 @@ app.post("/api/login", (req, res) => {
   }
 
   const student = db.prepare(`
-    SELECT id, name, email, password
+    SELECT id, name, email, major, bio, password
     FROM students
     WHERE email = ?
   `).get(email);
@@ -144,7 +144,13 @@ app.post("/api/login", (req, res) => {
 
   res.json({
     message: "Login successful",
-    student: { id: student.id, name: student.name, email: student.email },
+    student: {
+      id: student.id,
+      name: student.name,
+      email: student.email,
+      major: student.major,
+      bio: student.bio,
+    },
   });
 });
 
@@ -156,6 +162,125 @@ app.get("/api/projects", (_req, res) => {
   `).all();
 
   res.json(rows.map(formatProject));
+});
+
+app.post("/api/projects", (req, res) => {
+  const studentId = typeof req.body?.studentId === "string" ? req.body.studentId.trim() : "";
+  const title = typeof req.body?.title === "string" ? req.body.title.trim() : "";
+  const description = typeof req.body?.description === "string" ? req.body.description.trim() : "";
+  const category = typeof req.body?.category === "string" ? req.body.category.trim() : "";
+  const difficulty = req.body?.difficulty;
+  const listFields = ["technologies", "skillsLearned", "starterTasks"];
+
+  if (!studentId || !title || !description || !category) {
+    return res.status(400).json({ error: "Student, title, description, and category are required" });
+  }
+
+  if (!["Beginner", "Intermediate", "Advanced"].includes(difficulty)) {
+    return res.status(400).json({ error: "Difficulty must be Beginner, Intermediate, or Advanced" });
+  }
+
+  const projectLists = {};
+  for (const field of listFields) {
+    const value = req.body?.[field];
+    if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
+      return res.status(400).json({ error: `${field} must be a list of text values` });
+    }
+    projectLists[field] = value.map((item) => item.trim()).filter(Boolean);
+  }
+
+  if (title.length > 120 || description.length > 2000 || category.length > 80) {
+    return res.status(400).json({ error: "Title, description, or category is too long" });
+  }
+
+  if (Object.values(projectLists).some((items) =>
+    items.length > 20 || items.some((item) => item.length > 100)
+  )) {
+    return res.status(400).json({ error: "List entries must be 100 characters or fewer, with at most 20 entries per list" });
+  }
+
+  const student = db.prepare("SELECT id FROM students WHERE id = ?").get(studentId);
+  if (!student) {
+    return res.status(404).json({ error: "Student account not found" });
+  }
+
+  const id = randomUUID();
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    db.prepare(`
+      INSERT INTO projects (
+        id, title, description, category, difficulty, status,
+        technologies, skills_learned, starter_tasks
+      )
+      VALUES (?, ?, ?, ?, ?, 'In Progress', ?, ?, ?)
+    `).run(
+      id,
+      title,
+      description,
+      category,
+      difficulty,
+      JSON.stringify(projectLists.technologies),
+      JSON.stringify(projectLists.skillsLearned),
+      JSON.stringify(projectLists.starterTasks),
+    );
+    db.prepare(`
+      INSERT INTO project_students (project_id, student_id)
+      VALUES (?, ?)
+    `).run(id, studentId);
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+
+  const row = db.prepare(`
+    SELECT ${projectColumns}
+    FROM projects
+    WHERE id = ?
+  `).get(id);
+
+  res.status(201).json(formatProject(row));
+});
+
+app.post("/api/projects/:projectId/access-request", (req, res) => {
+  const email = typeof req.body?.email === "string"
+    ? req.body.email.trim().toLowerCase()
+    : "";
+
+  if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return res.status(400).json({ error: "A valid email address is required" });
+  }
+
+  const project = db.prepare("SELECT id FROM projects WHERE id = ?").get(req.params.projectId);
+  if (!project) {
+    return res.status(404).json({ error: "Project not found" });
+  }
+
+  const student = db.prepare(`
+    SELECT id
+    FROM students
+    WHERE email = ? COLLATE NOCASE
+  `).get(email);
+
+  if (!student) {
+    return res.json({ matched: false, added: false });
+  }
+
+  const result = db.prepare(`
+    INSERT OR IGNORE INTO project_students (project_id, student_id)
+    VALUES (?, ?)
+  `).run(project.id, student.id);
+  const projectRow = db.prepare(`
+    SELECT ${projectColumns}
+    FROM projects
+    WHERE id = ?
+  `).get(project.id);
+
+  res.json({
+    matched: true,
+    added: result.changes > 0,
+    project: formatProject(projectRow),
+  });
 });
 
 app.get("/api/projects/:projectId", (req, res) => {
@@ -200,6 +325,33 @@ app.get("/api/students/:studentId", (req, res) => {
     ...student,
     projects: projects.map(formatProject),
   });
+});
+
+app.patch("/api/students/:studentId", (req, res) => {
+  const major = typeof req.body?.major === "string" ? req.body.major.trim() : "";
+  const bio = typeof req.body?.bio === "string" ? req.body.bio.trim() : "";
+
+  if (major.length > 120 || bio.length > 1000) {
+    return res.status(400).json({ error: "Major must be 120 characters or fewer and bio 1,000 characters or fewer" });
+  }
+
+  const result = db.prepare(`
+    UPDATE students
+    SET major = ?, bio = ?
+    WHERE id = ?
+  `).run(major || null, bio || null, req.params.studentId);
+
+  if (result.changes === 0) {
+    return res.status(404).json({ error: "Student not found" });
+  }
+
+  const student = db.prepare(`
+    SELECT id, name, email, major, bio
+    FROM students
+    WHERE id = ?
+  `).get(req.params.studentId);
+
+  res.json(student);
 });
 
 const PORT = 3001;

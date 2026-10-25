@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import { Link, useParams } from "react-router";
 import {
   ArrowLeft,
@@ -13,7 +13,7 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { getProjectById } from "../lib/api/projects";
+import { getProjectById, submitProjectAccessRequest } from "../lib/api/projects";
 import type { Project } from "../types/project";
 
 export default function ProjectPage() {
@@ -25,6 +25,9 @@ export default function ProjectPage() {
 
   const [showAccessForm, setShowAccessForm] = useState(false);
   const [requestSubmitted, setRequestSubmitted] = useState(false);
+  const [requestResult, setRequestResult] = useState("");
+  const [isSubmittingRequest, setIsSubmittingRequest] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
   const [requestName, setRequestName] = useState("");
   const [requestEmail, setRequestEmail] = useState("");
   const [requestMessage, setRequestMessage] = useState("");
@@ -72,9 +75,45 @@ export default function ProjectPage() {
   function resetAccessRequest() {
     setShowAccessForm(false);
     setRequestSubmitted(false);
+    setRequestResult("");
+    setRequestError(null);
     setRequestName("");
     setRequestEmail("");
     setRequestMessage("");
+  }
+
+  async function handleAccessRequest(event: SubmitEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!projectId) {
+      setRequestError("Missing project ID.");
+      return;
+    }
+
+    setIsSubmittingRequest(true);
+    setRequestError(null);
+    try {
+      const result = await submitProjectAccessRequest(projectId, requestEmail);
+      if (result.matched) {
+        setProject(result.project);
+        setRequestResult(
+          result.added
+            ? "A matching account was found and added as a contributor. Your request message was not sent to the project team."
+            : "This account is already a project contributor. Your request message was not sent to the project team.",
+        );
+      } else {
+        setRequestResult(
+          "No account matches this email, so no contributor was added. This demo does not store or send unmatched access requests.",
+        );
+      }
+      setRequestSubmitted(true);
+      setShowAccessForm(false);
+    } catch (error) {
+      setRequestError(
+        error instanceof Error ? error.message : "Unable to submit the access request.",
+      );
+    } finally {
+      setIsSubmittingRequest(false);
+    }
   }
 
   if (isLoading) {
@@ -297,11 +336,7 @@ export default function ProjectPage() {
                 {showAccessForm && !requestSubmitted && (
                   <form
                     className="project-access-form"
-                    onSubmit={(event) => {
-                      event.preventDefault();
-                      setRequestSubmitted(true);
-                      setShowAccessForm(false);
-                    }}
+                    onSubmit={handleAccessRequest}
                   >
                     <div className="project-access-form-heading">
                       <div>
@@ -375,10 +410,12 @@ export default function ProjectPage() {
                     <button
                       type="submit"
                       className="button button-primary project-access-button"
+                      disabled={isSubmittingRequest}
                     >
                       <Send size={17} />
-                      Submit Request
+                      {isSubmittingRequest ? "Submitting..." : "Submit Request"}
                     </button>
+                    {requestError && <p className="project-access-error" role="alert">{requestError}</p>}
                   </form>
                 )}
 
@@ -390,12 +427,8 @@ export default function ProjectPage() {
                     <CheckCircle2 size={23} />
 
                     <div>
-                      <h3>Request submitted!</h3>
-                      <p>
-                        Your demo request for {project.title} has been
-                        recorded on this page. No actual request has been
-                        sent to the project team.
-                      </p>
+                      <h3>Request processed</h3>
+                      <p>{requestResult}</p>
 
                       <button
                         type="button"

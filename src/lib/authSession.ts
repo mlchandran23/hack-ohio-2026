@@ -2,6 +2,8 @@ export type StudentSession = {
 	id: string;
 	name: string;
 	email: string;
+	major?: string | null;
+	bio?: string | null;
 };
 
 const SESSION_KEY = "buckeye-bridge-student";

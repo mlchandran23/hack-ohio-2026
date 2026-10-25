@@ -619,6 +619,115 @@ img {
   letter-spacing: -0.045em;
 }
 
+.project-create-actions,
+.project-create-message,
+.project-create-error,
+.project-create-panel {
+  max-width: var(--content-width);
+  margin-inline: auto;
+}
+
+.project-create-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 1rem;
+}
+
+.project-create-actions p {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.project-create-message,
+.project-create-error {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+.project-create-message {
+  color: #166534;
+}
+
+.project-create-error {
+  color: #b42318;
+}
+
+.project-create-panel {
+  margin-bottom: 1.5rem;
+  padding: 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  background: #ffffff;
+  box-shadow: var(--shadow-card);
+}
+
+.project-create-panel h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.project-create-panel > p {
+  margin: 0.35rem 0 1.25rem;
+  color: var(--color-text-muted);
+}
+
+.project-create-form {
+  display: grid;
+  justify-items: start;
+  gap: 1rem;
+}
+
+.project-create-fields {
+  display: grid;
+  width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.project-create-field {
+  display: grid;
+  min-width: 0;
+  gap: 0.4rem;
+}
+
+.project-create-field-wide {
+  grid-column: 1 / -1;
+}
+
+.project-create-field label {
+  color: #475569;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.project-create-field input,
+.project-create-field select,
+.project-create-field textarea {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: #ffffff;
+  color: var(--color-text);
+}
+
+.project-create-field textarea {
+  resize: vertical;
+}
+
+.project-create-field input:focus,
+.project-create-field select:focus,
+.project-create-field textarea:focus {
+  border-color: var(--color-primary);
+  outline: 2px solid rgb(187 0 0 / 15%);
+}
+
+.project-create-form button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}
+
 .page-header p {
   max-width: 46rem;
   margin-bottom: 0;
@@ -876,6 +985,19 @@ img {
     grid-template-columns: minmax(0, 1fr);
     gap: 1rem;
     margin-bottom: 1.25rem;
+    padding: 1rem;
+    border-radius: var(--radius-lg);
+  }
+
+  .project-create-fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .project-create-field-wide {
+    grid-column: auto;
+  }
+
+  .project-create-panel {
     padding: 1rem;
     border-radius: var(--radius-lg);
   }
@@ -2191,6 +2313,12 @@ select {
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   background: var(--color-surface);
+}
+
+.project-access-error {
+  margin: 0;
+  color: #b42318;
+  font-size: 0.9rem;
 }
 
 .project-access-form-heading {
